@@ -21,7 +21,7 @@ void expo_test2(const vector<unsigned long> delta_vec){
     #ifdef CURVE_MNT6
     cout << "MNT6 checked" << endl;
     #endif
-
+    cout << "Size of the vector: " << delta_vec.size() << endl;
     auto t2 = chrono::high_resolution_clock::now();
     auto t3 = chrono::high_resolution_clock::now();
     auto t4 = t2 - t2;
@@ -73,11 +73,12 @@ bool expo_test(const size_t &limit = 10000, const int &txn_count = 1000) {
 
     auto t1 = chrono::high_resolution_clock::now(), t2 = chrono::high_resolution_clock::now();
     auto t3 = t2 - t2;
-    // srand(time(NULL));
+    srand(time(NULL));
 
     vector<unsigned long> exponents;
     for (size_t i = 0; i < txn_count; i++){
-        exponents.push_back(rand() % limit);
+        unsigned long temp = rand() % limit;
+        exponents.push_back(temp);
     }
 
     expo_test2<ppT>(exponents);
