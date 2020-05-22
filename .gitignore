@@ -1,3 +1,12 @@
 *.DS_Store
-build
+*/ate_pairing/test*
 .ccls-cache/
+.vscode/*
+.vscode/cquery_cached_index/
+build/*
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+debug/
+Makefile
