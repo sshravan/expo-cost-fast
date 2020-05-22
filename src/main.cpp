@@ -1,59 +1,112 @@
-#include <libff/common/default_types/ec_pp.hpp>
-#include <libsnark/common/default_types/r1cs_gg_ppzksnark_pp.hpp>
-#include <libsnark/relations/constraint_satisfaction_problems/r1cs/examples/r1cs_examples.hpp>
-#include <libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark/r1cs_gg_ppzksnark.hpp>
+#include <libff/common/profiling.hpp>
 
-using namespace libsnark;
+#include <libff/algebra/curves/bn128/bn128_pp.hpp>
+#include <libff/algebra/curves/mnt/mnt4/mnt4_pp.hpp>
+#include <libff/algebra/curves/mnt/mnt6/mnt6_pp.hpp>
 
-/**
- * The code below provides an example of all stages of running a R1CS GG-ppzkSNARK.
- *
- * Of course, in a real-life scenario, we would have three distinct entities,
- * mangled into one in the demonstration below. The three entities are as follows.
- * (1) The "generator", which runs the ppzkSNARK generator on input a given
- *     constraint system CS to create a proving and a verification key for CS.
- * (2) The "prover", which runs the ppzkSNARK prover on input the proving key,
- *     a primary input for CS, and an auxiliary input for CS.
- * (3) The "verifier", which runs the ppzkSNARK verifier on input the verification key,
- *     a primary input for CS, and a proof.
- */
-template<typename ppT>
-bool run_r1cs_gg_ppzksnark(const r1cs_example<libff::Fr<ppT> > &example)
-{
-    libff::print_header("R1CS GG-ppzkSNARK Generator");
-    r1cs_gg_ppzksnark_keypair<ppT> keypair = r1cs_gg_ppzksnark_generator<ppT>(example.constraint_system);
-    printf("\n"); libff::print_indent(); libff::print_mem("after generator");
+#include <vector>
+#include <chrono>
+#include <fstream>
 
-    libff::print_header("Preprocess verification key");
-    r1cs_gg_ppzksnark_processed_verification_key<ppT> pvk = r1cs_gg_ppzksnark_verifier_process_vk<ppT>(keypair.vk);
+#include <gmp.h>
+#include <gmpxx.h>
 
-    libff::print_header("R1CS GG-ppzkSNARK Prover");
-    r1cs_gg_ppzksnark_proof<ppT> proof = r1cs_gg_ppzksnark_prover<ppT>(keypair.pk, example.primary_input, example.auxiliary_input);
-    printf("\n"); libff::print_indent(); libff::print_mem("after prover");
 
-    libff::print_header("R1CS GG-ppzkSNARK Verifier");
-    const bool ans = r1cs_gg_ppzksnark_verifier_strong_IC<ppT>(keypair.vk, example.primary_input, proof);
-    printf("\n"); libff::print_indent(); libff::print_mem("after verifier");
-    printf("* The verification result is: %s\n", (ans ? "PASS" : "FAIL"));
+using namespace libff;
+using namespace std;
 
-    libff::print_header("R1CS GG-ppzkSNARK Online Verifier");
-    const bool ans2 = r1cs_gg_ppzksnark_online_verifier_strong_IC<ppT>(pvk, example.primary_input, proof);
-    assert(ans == ans2);
+template <typename ppT>
+void expo_test2(const vector<unsigned long> delta_vec){
 
-    return ans;
+    #ifdef CURVE_MNT6
+    cout << "MNT6 checked" << endl;
+    #endif
+
+    auto t2 = chrono::high_resolution_clock::now();
+    auto t3 = chrono::high_resolution_clock::now();
+    auto t4 = t2 - t2;
+
+    Fr<ppT> temp = Fr<ppT>::random_element();
+    G1<ppT> g1 = G1<ppT>::one();
+    G1<ppT> temp_g1 = (Fr<ppT>::random_element()) * G1<ppT>::one();
+
+    t4 = t2 - t2;
+    for (size_t i = 0; i < delta_vec.size(); ++i){
+
+        temp = delta_vec[i];
+        t2 = chrono::high_resolution_clock::now();
+        temp_g1 = temp_g1 + (temp * g1);
+        t3 = chrono::high_resolution_clock::now();
+        t4 += t3 - t2;
+        // temp_g2 = temp * g2;
+
+    }
+    cout << "EC Expo Test: " << chrono::duration<double, micro>(t4).count() / delta_vec.size() << " us" << endl;
+
+
+    const string MODULUS = "25195908475657893494027183240048398571429282126204032027777137836043662020707595556264018525880784406918290641249515082189298559149176184502808489120072844992687392807287776735971418347270261896375014971824691165077613379859095700097330459748808428401797429100642458691817195118746121515172654632282216869987549182422433637259085141865462043576798423387184774447920739934236584823824281198163815010674810451660377306056201619676256133844143603833904414952634432190114657544454178424020924616515723350778707749817125772467962926386356373289912154831438167899885040445364023527381951378636564391212010397122822120720357";
+    const string BASE = "2988348162058574136915891421498819466320163312926952423791023078876139";
+    mpz_class g, delta_mpz, n, r;
+
+    g.set_str(BASE.c_str(), 10);
+    n.set_str(MODULUS.c_str(), 10);
+    t4 = t2 - t2;
+    for (size_t i = 0; i < delta_vec.size(); i++){
+        mpz_set_ui(delta_mpz.get_mpz_t(), delta_vec[i]);
+        t2 = chrono::high_resolution_clock::now();
+        mpz_powm(r.get_mpz_t(), g.get_mpz_t(), delta_mpz.get_mpz_t(), n.get_mpz_t());
+        mpz_mul(r.get_mpz_t(), r.get_mpz_t(), n.get_mpz_t());
+        mpz_mod(r.get_mpz_t(), r.get_mpz_t(), n.get_mpz_t());
+        t3 = chrono::high_resolution_clock::now();
+        t4 += t3 - t2;
+    }
+    cout << "GMP exp: " << chrono::duration<double, micro>(t4).count() / delta_vec.size() << " us " << endl;
+
+    cout << "============== EXPO COMPARE 2 ==================" << endl;
+
 }
 
+
+
 template<typename ppT>
-void test_r1cs_gg_ppzksnark(size_t num_constraints, size_t input_size)
-{
-    r1cs_example<libff::Fr<ppT> > example = generate_r1cs_example_with_binary_input<libff::Fr<ppT> >(num_constraints, input_size);
-    const bool bit = run_r1cs_gg_ppzksnark<ppT>(example);
-    assert(bit);
+bool expo_test(const size_t &limit = 10000, const int &txn_count = 1000) {
+
+    auto t1 = chrono::high_resolution_clock::now(), t2 = chrono::high_resolution_clock::now();
+    auto t3 = t2 - t2;
+    // srand(time(NULL));
+
+    vector<unsigned long> exponents;
+    for (size_t i = 0; i < txn_count; i++){
+        exponents.push_back(rand() % limit);
+    }
+
+    expo_test2<ppT>(exponents);
+    return true;
 }
+int main(int argc, char **argv){
 
-int main () {
-    default_r1cs_gg_ppzksnark_pp::init_public_params();
-    test_r1cs_gg_ppzksnark<default_r1cs_gg_ppzksnark_pp>(1000, 100);
+    libff::inhibit_profiling_info = true;
+    libff::inhibit_profiling_counters = true;
 
+    int L = atoi(argv[1]);
+    size_t limit = (int)pow(10, L);
+    cout << "=============================================================" << endl;
+    cout << "Bounds of TX value: " << limit << endl;
+    cout << "=============================================================" << endl;
+
+    #ifdef CURVE_MNT6
+        cout << "MNT6" << endl;
+        mnt6_pp::init_public_params();
+        expo_test<mnt6_pp>(limit);
+        cout << "=============================================================" << endl;
+
+    #endif
+
+    #ifdef CURVE_MNT4
+        // cout << "MNT4" << endl;
+        // mnt4_pp::init_public_params();
+        // expo_test<mnt4_pp>(limit);
+        // cout << "=============================================================" << endl;
+    #endif
     return 0;
 }
