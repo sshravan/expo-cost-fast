@@ -6,6 +6,10 @@
 
 #include <vector>
 #include <chrono>
+#include <time.h>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <fstream>
 
 #include <gmp.h>
