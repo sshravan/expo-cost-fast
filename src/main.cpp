@@ -104,10 +104,10 @@ int main(int argc, char **argv){
     #endif
 
     #ifdef CURVE_MNT4
-        // cout << "MNT4" << endl;
-        // mnt4_pp::init_public_params();
-        // expo_test<mnt4_pp>(limit);
-        // cout << "=============================================================" << endl;
+        cout << "MNT4" << endl;
+        mnt4_pp::init_public_params();
+        expo_test<mnt4_pp>(limit);
+        cout << "=============================================================" << endl;
     #endif
     return 0;
 }
